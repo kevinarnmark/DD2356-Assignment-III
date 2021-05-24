@@ -41,33 +41,26 @@ int main(int argc, char* argv[])
         }
     }   
     
-    int tree_depth = num_ranks...;
-    for (int i = 1; i < tree_depth; i++) {
-        if (rank % pow(2, i) == 0) {
-            MPI_Recv()
+    int tree_depth = log2(num_ranks);
+    int local_recv = 0;
+    if (rank % 2 == 1) {
+        MPI_Send(&local_count, 1, MPI_INT, rank - 1, 0, MPI_COMM_WORLD); 
+    }
+    for (int i = 0; i < tree_depth; i++) {
+        if (rank % (1 << i+1) == 0) {
+            MPI_Recv(&local_recv, 1, MPI_INT, rank + pow(2, i), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            local_count += local_recv;
+        }
+        else if (rank % (1 << i) == 0 && rank % 2 != 1) {
+            MPI_Send(&local_count, 1, MPI_INT, rank - pow(2, i), 0, MPI_COMM_WORLD); 
         }
     }
-    
     if (rank == 0) {
-        int counts[num_ranks - 1];
-        int global_count = 0;
-        
-        for (int i = 1; i < num_ranks; i++) {
-            MPI_Recv(&counts[i - 1], 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-        
-        global_count += local_count;
-        for (i = 0; i < num_ranks - 1; i++) {
-            global_count += counts[i];
-        }
-        
         // Estimate Pi and display the result
-        pi = ((double)global_count / (double)(flip * num_ranks)) * 4.0;
+        pi = ((double)local_count / (double)(flip * num_ranks)) * 4.0;
+    
+    }    
 
-    }
-    else {
-        MPI_Send(&local_count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-    }
     stop_time = MPI_Wtime();
     elapsed_time = stop_time - start_time;
     
