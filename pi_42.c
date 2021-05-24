@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
         MPI_Send(&local_count, 1, MPI_INT, rank - 1, 0, MPI_COMM_WORLD); 
     }
     for (int i = 0; i < tree_depth; i++) {
-        if (rank % (1 << i+1) == 0) {
+        if (rank % (1 << (i+1)) == 0) {
             MPI_Recv(&local_recv, 1, MPI_INT, rank + pow(2, i), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             local_count += local_recv;
         }
